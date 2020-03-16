@@ -1,0 +1,49 @@
+name: CI
+
+on: [push]
+env:
+  DOCKER_REPO: myedes
+  DOCKER_IMAGE: stripe-slack-notifier
+  DOCKER_CLI_EXPERIMENTAL: enabled
+  TAG: ''
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install OpenFaaS CLI
+        run: |
+          curl -sSL https://cli.openfaas.com | sudo sh
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v1
+        with:
+          version: latest
+      - name: Install buildx as default
+        run: |
+          docker buildx install
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: Get templates
+        run: |
+          faas-cli template pull stack
+      - name: Prepare image build
+        run: |
+          echo "::set-env name=TAG::$(faas-cli build --shrinkwrap --tag sha | grep -i building | sed "s/.*$IMAGE://" | cut -f1 -d" " | sed -n 2p)"
+      - name: Login to DockerHub Registry
+        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      - name: Build multi platform
+        working-directory: './build/stripe-slack-notifier/'
+        run: |
+          docker version && \
+          echo ${{ steps.buildx.outputs.platforms }} && \
+          docker build --platform linux/amd64,linux/arm/v7 -t $DOCKER_REPO/$DOCKER_IMAGE:$TAG --push .
+      - name: Login to OpenFaaS
+        run: |
+          echo ${{ secrets.OPENFAAS_PASSWORD }} | faas-cli login --gateway ${{ secrets.OPENFAAS_GATEWAY }} -u ${{ secrets.OPENFAAS_USERNAME }} --password-stdin
+      - name: deploy
+        if: success() && github.ref == 'refs/heads/master'
+        run: |
+          faas-cli deploy -g ${{ secrets.OPENFAAS_GATEWAY }} --tag sha
