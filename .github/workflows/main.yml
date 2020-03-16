@@ -28,10 +28,11 @@ jobs:
         run: echo ${{ steps.buildx.outputs.platforms }}
       - name: Get templates
         run: |
-          faas-cli template pull stack
+          faas-cli template pull stack -f stripe-slack-notifier.yml
       - name: Prepare image build
         run: |
-          echo "::set-env name=TAG::$(faas-cli build --shrinkwrap --tag sha | grep -i building | sed "s/.*$IMAGE://" | cut -f1 -d" " | sed -n 2p)"
+          echo "::set-env name=TAG::$(faas-cli build --shrinkwrap --tag sha -f stripe-slack-notifier.yml | grep -i building | sed "s/.*$IMAGE://" | cut -f1 -d" " | sed -n 2p)" && \
+          echo $TAG
       - name: Login to DockerHub Registry
         run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
       - name: Build multi platform
@@ -46,4 +47,4 @@ jobs:
       - name: deploy
         if: success() && github.ref == 'refs/heads/master'
         run: |
-          faas-cli deploy -g ${{ secrets.OPENFAAS_GATEWAY }} --tag sha
+          faas-cli deploy -g ${{ secrets.OPENFAAS_GATEWAY }} --tag sha -f stripe-slack-notifier.yml
