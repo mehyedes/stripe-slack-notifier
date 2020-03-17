@@ -7,6 +7,8 @@ functions:
     lang: python3
     handler: ./stripe-slack-notifier
     image: myedes/stripe-slack-notifier:latest
+    secrets:
+      - slack-webhook-url
 
 configuration:
   templates:
