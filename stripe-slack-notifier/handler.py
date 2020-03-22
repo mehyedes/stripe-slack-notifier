@@ -11,15 +11,15 @@ def handle(req):
     Args:
         req (str): request body
     """    
-    payload = json.loads(req)
-    amount = payload['amount']
-    currency = payload['currency']
+    charge_data = json.loads(req)['data']['object']
+    amount = charge_data['amount']
+    currency = charge_data['currency']
     # Make sure you create a secret named slack-webhook-url with the Webhook URL as value
     # using the faas CLI command: faas-cli secret create 
     webhook_url = get_slack_secret("slack-webhook-url")
     try:
         slack = Slack(url=webhook_url)
-        slack.post(text=f"You have a received a new payment of {amount} {currency} :moneybag: :tada:")
+        slack.post(text=f"You have a received a new payment of {amount} {currency.upper()} :moneybag: :tada:")
     except:
         print("An error occured when trying to send slack message.")
     else:
