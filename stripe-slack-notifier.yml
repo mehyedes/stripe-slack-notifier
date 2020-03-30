@@ -9,6 +9,8 @@ functions:
     image: myedes/stripe-slack-notifier:latest
     secrets:
       - slack-webhook-url
+      - stripe-secret-key
+      - webhook-secret
 
 configuration:
   templates:

@@ -1,1 +1,4 @@
 slack-webhook
+stripe
+flask
+Babel
